@@ -8,17 +8,30 @@ void setup() {
     pinMode(5, OUTPUT);
 }
 
-int level = 10;
-
-const int cycleLength = 5000; // in microseconds; 5000us is 200Hz
-unsigned long nextCycleStart = 0;
-bool currentState = false;
+const unsigned long cycleLength = 5000; // in microseconds; 5000us is 200Hz
 
 SimplexNoise sn;
 
-void loop() {
-    unsigned long currentMicros = micros();
+class PinState {
+    int pin;
+    double slice;
+    int level = 100;
+    unsigned long nextCycleStart;
+    bool currentState = false;
 
+public:
+    PinState(int pin, double slice);
+    void update(unsigned long currentMicros);
+};
+
+PinState::PinState(int pin, double slice) {
+    this->pin = pin;
+    this->slice = slice;
+
+    nextCycleStart = slice * 100; // sort of randomize phase
+}
+
+void PinState::update(unsigned long currentMicros) {
     if (currentState) {
         // downstroke
         if (nextCycleStart + level <= currentMicros) {
@@ -26,26 +39,23 @@ void loop() {
             nextCycleStart += cycleLength;
 
             // flip pin
-            digitalWrite(2, LOW);
-            digitalWrite(3, LOW);
-            digitalWrite(4, LOW);
-            digitalWrite(5, LOW);
+            if (pin == 2) digitalWrite(pin, LOW);
             currentState = false;
 
             // change PWM level as needed
             double currentSeconds = currentMicros / 1000000.0;
 
             // slow overall brightness change
-            double baseGlow = 0.5 + 0.5 * sn.noise(currentSeconds * 0.03, 0);
+            double baseGlow = 0.5 + 0.5 * sn.noise(currentSeconds * 0.03, slice + 0);
             baseGlow *= baseGlow; // exaggerate the dips in brightness
 
             // simple frequent oscillation
-            double baseBreath = 0.5 + 0.5 * sn.noise(currentSeconds * 0.5, 0.5);
+            double baseBreath = 0.5 + 0.5 * sn.noise(currentSeconds * 0.5, slice + 0.5);
 
             // amplify and clamp the throttle noise for a clearer mode
-            double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, 1.0);
+            double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, slice + 1.0);
             double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
-            double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
+            double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, slice + 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, slice + 2.0);
 
             // mix up the proportioned factors
             double total = baseGlow * (1.0 - baseBreath * 0.2) * (1.0 - flickerThrottle * flicker * 0.5);
@@ -55,11 +65,19 @@ void loop() {
         // upstroke
         if (nextCycleStart <= currentMicros) {
             // flip pin with no actions yet
-            digitalWrite(2, HIGH);
-            digitalWrite(3, HIGH);
-            digitalWrite(4, HIGH);
-            digitalWrite(5, HIGH);
+            if (pin == 2) digitalWrite(pin, HIGH);
             currentState = true;
         }
     }
+}
+
+class PinState a(2, 0.0), b(3, 10.0), c(4, 20.0), d(5, 30.0);
+
+void loop() {
+    unsigned long currentMicros = micros();
+
+    a.update(currentMicros);
+    b.update(currentMicros);
+    c.update(currentMicros);
+    d.update(currentMicros);
 }
