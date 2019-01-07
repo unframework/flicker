@@ -4,18 +4,18 @@ void setup() {
     pinMode(2, OUTPUT);
 }
 
-int level = 1;
+int level = 10;
 
-const int cycleLength = 15;
+const int cycleLength = 5000; // in microseconds; 5000us is 200Hz
 unsigned long nextCycleStart = 0;
 bool currentState = false;
 
 void loop() {
-    unsigned long currentMillis = millis();
+    unsigned long currentMicros = micros();
 
     if (currentState) {
         // downstroke
-        if (nextCycleStart + level <= currentMillis) {
+        if (nextCycleStart + level <= currentMicros) {
             // prep next timeout
             nextCycleStart += cycleLength;
 
@@ -24,11 +24,11 @@ void loop() {
             currentState = false;
 
             // change PWM level as needed
-            level = (currentMillis / 100) % 16;
+            level = ((currentMicros / 10000) % 100) * cycleLength / 100;
         }
     } else {
         // upstroke
-        if (nextCycleStart <= currentMillis) {
+        if (nextCycleStart <= currentMicros) {
             // flip pin with no actions yet
             digitalWrite(2, HIGH);
             currentState = true;
