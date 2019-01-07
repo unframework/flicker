@@ -3,6 +3,9 @@
 void setup() {
     // initialize pins as output
     pinMode(2, OUTPUT);
+    pinMode(3, OUTPUT);
+    pinMode(4, OUTPUT);
+    pinMode(5, OUTPUT);
 }
 
 int level = 10;
@@ -24,6 +27,9 @@ void loop() {
 
             // flip pin
             digitalWrite(2, LOW);
+            digitalWrite(3, LOW);
+            digitalWrite(4, LOW);
+            digitalWrite(5, LOW);
             currentState = false;
 
             // change PWM level as needed
@@ -50,6 +56,9 @@ void loop() {
         if (nextCycleStart <= currentMicros) {
             // flip pin with no actions yet
             digitalWrite(2, HIGH);
+            digitalWrite(3, HIGH);
+            digitalWrite(4, HIGH);
+            digitalWrite(5, HIGH);
             currentState = true;
         }
     }
