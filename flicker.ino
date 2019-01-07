@@ -1,16 +1,18 @@
 #include <SimplexNoise.h>
 
+SimplexNoise sn;
+
 void setup() {
     // initialize pins as output
     pinMode(2, OUTPUT);
     pinMode(3, OUTPUT);
     pinMode(4, OUTPUT);
     pinMode(5, OUTPUT);
+
+    sn.init();
 }
 
 const unsigned long cycleLength = 5000; // in microseconds; 5000us is 200Hz
-
-SimplexNoise sn;
 
 class PinState {
     int pin;
