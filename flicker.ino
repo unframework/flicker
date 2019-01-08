@@ -41,7 +41,7 @@ void PinState::update(unsigned long currentMicros) {
             nextCycleStart += cycleLength;
 
             // flip pin
-            if (pin == 2) digitalWrite(pin, LOW);
+            digitalWrite(pin, LOW);
             currentState = false;
 
             // change PWM level as needed
@@ -67,7 +67,7 @@ void PinState::update(unsigned long currentMicros) {
         // upstroke
         if (nextCycleStart <= currentMicros) {
             // flip pin with no actions yet
-            if (pin == 2) digitalWrite(pin, HIGH);
+            digitalWrite(pin, HIGH);
             currentState = true;
         }
     }
