@@ -4,7 +4,7 @@
 SimplexNoise sn;
 
 const unsigned long cycleLength = 6000; // in microseconds; 5000us is 200Hz
-const unsigned long pollPeriod = 60; // in microseconds
+const unsigned long pollPeriod = 100; // in microseconds
 unsigned long currentMicros = 0;
 
 void setup() {
@@ -29,7 +29,7 @@ class PinState {
 
 public:
     PinState(int pin, double phase);
-    void computeLevel();
+    void computeLevel(double currentSeconds, double flickerMultiplier);
     void setLevel(unsigned long level);
     void render();
 };
@@ -47,14 +47,7 @@ void PinState::setLevel(unsigned long level) {
     interrupts();
 }
 
-void PinState::computeLevel() {
-    noInterrupts();
-    unsigned long currentMicrosSnapshot = currentMicros;
-    interrupts();
-
-    // change PWM level as needed
-    double currentSeconds = currentMicrosSnapshot / 1000000.0;
-
+void PinState::computeLevel(double currentSeconds, double flickerMultiplier) {
     // slow overall brightness change
     double baseGlow = 0.5 + 0.5 * sn.noise(currentSeconds * 0.03, yOffset + 0);
     baseGlow *= baseGlow; // exaggerate the dips in brightness
@@ -62,14 +55,8 @@ void PinState::computeLevel() {
     // simple frequent oscillation
     double baseBreath = 0.5 + 0.5 * sn.noise(currentSeconds * 0.5, yOffset + 0.5);
 
-    // amplify and clamp the throttle noise for a clearer mode
-    // the flicker is synchronized across all phases
-    double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, 1.0);
-    double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
-    double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
-
     // mix up the proportioned factors
-    double total = baseGlow * (1.0 - baseBreath * 0.5) * (1.0 - flickerThrottle * flicker * 0.5);
+    double total = baseGlow * (1.0 - baseBreath * 0.5) * flickerMultiplier;
     setLevel(total * cycleLength);
 }
 
@@ -97,10 +84,24 @@ void PinState::render() {
 class PinState a(2, 0.0), b(3, 0.25), c(4, 0.5), d(5, 0.75);
 
 void loop() {
-    a.computeLevel();
-    b.computeLevel();
-    c.computeLevel();
-    d.computeLevel();
+    noInterrupts();
+    unsigned long currentMicrosSnapshot = currentMicros;
+    interrupts();
+
+    // change PWM level as needed
+    double currentSeconds = currentMicrosSnapshot / 1000000.0;
+
+    // amplify and clamp the throttle noise for a clearer mode
+    // the flicker is synchronized across all phases
+    double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, 1.0);
+    double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
+    double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
+    double flickerMultiplier = (1.0 - flickerThrottle * flicker * 0.8);
+
+    a.computeLevel(currentSeconds, flickerMultiplier);
+    b.computeLevel(currentSeconds, flickerMultiplier);
+    c.computeLevel(currentSeconds, flickerMultiplier);
+    d.computeLevel(currentSeconds, flickerMultiplier);
 
     delay(20);
 }
