@@ -93,7 +93,7 @@ void loop() {
 
     // amplify and clamp the throttle noise for a clearer mode
     // the flicker is synchronized across all phases
-    double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, 1.0);
+    double flickerThrottleRaw = sn.noise(currentSeconds * 0.25, 1.0);
     double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
     double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
     double flickerMultiplier = (1.0 - flickerThrottle * flicker * 0.8);
