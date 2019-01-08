@@ -63,12 +63,13 @@ void PinState::computeLevel() {
     double baseBreath = 0.5 + 0.5 * sn.noise(currentSeconds * 0.5, yOffset + 0.5);
 
     // amplify and clamp the throttle noise for a clearer mode
-    double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, yOffset + 1.0);
+    // the flicker is synchronized across all phases
+    double flickerThrottleRaw = sn.noise(currentSeconds * 0.5, 1.0);
     double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
-    double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, yOffset + 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, yOffset + 2.0);
+    double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
 
     // mix up the proportioned factors
-    double total = baseGlow * (1.0 - baseBreath * 0.2) * (1.0 - flickerThrottle * flicker * 0.5);
+    double total = baseGlow * (1.0 - baseBreath * 0.5) * (1.0 - flickerThrottle * flicker * 0.5);
     setLevel(total * cycleLength);
 }
 
