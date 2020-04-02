@@ -7,12 +7,17 @@ const unsigned long cycleLength = 6000; // in microseconds; 5000us is 200Hz
 const unsigned long pollPeriod = 100; // in microseconds
 unsigned long currentMicros = 0;
 
+double currentActivation = 0;
+
 void setup() {
     // initialize pins as output
     pinMode(2, OUTPUT);
     pinMode(3, OUTPUT);
     pinMode(4, OUTPUT);
     pinMode(5, OUTPUT);
+
+    // touch sense pin
+    pinMode(8, INPUT);
 
     Timer1.initialize(pollPeriod); // allow for some precision
     Timer1.attachInterrupt(renderAll);
@@ -88,14 +93,17 @@ void loop() {
     unsigned long currentMicrosSnapshot = currentMicros;
     interrupts();
 
+    double senseAdjustment = digitalRead(8) == HIGH ? 1.0 : 0;
+    currentActivation += (senseAdjustment - currentActivation) * 0.25;
+
     // change PWM level as needed
     double currentSeconds = currentMicrosSnapshot / 1000000.0;
 
     // amplify and clamp the throttle noise for a clearer mode
     // the flicker is synchronized across all phases
     double flickerThrottleRaw = sn.noise(currentSeconds * 0.25, 1.0);
-    double flickerThrottle = min(1.0, 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
-    double flicker = 0.5 + 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
+    double flickerThrottle = min(1.0, currentActivation + 3.0 * max(0.0, flickerThrottleRaw - 1.0 + 0.5) / 0.5);
+    double flicker = (1.0 - currentActivation) * 0.5 + (1.0 + currentActivation) * 0.3 * sn.noise(currentSeconds * 8.0, 2.0) + 0.2 * sn.noise(currentSeconds * 14.0, 2.0);
     double flickerMultiplier = (1.0 - flickerThrottle * flicker * 0.8);
 
     a.computeLevel(currentSeconds, flickerMultiplier);
@@ -109,8 +117,8 @@ void loop() {
 void renderAll() {
     currentMicros += pollPeriod;
 
-    a.render();
-    b.render();
-    c.render();
-    d.render();
+    // a.render();
+    // b.render();
+    // c.render();
+    // d.render();
 }
